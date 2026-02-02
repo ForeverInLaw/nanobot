@@ -135,12 +135,23 @@ async def _read_interactive_input_async() -> str:
 def _create_provider(config):
     """Create appropriate LLM provider based on configuration.
     
-    Priority order: NVIDIA > OpenRouter > Anthropic > OpenAI > Gemini > Zhipu > vLLM
+    Priority order: Custom > NVIDIA > OpenRouter > Anthropic > OpenAI > Gemini > Zhipu > vLLM
     """
     from nanobot.providers.litellm_provider import LiteLLMProvider
     from nanobot.providers.openai_provider import OpenAIProvider
     
-    # Check for NVIDIA API key first
+    # Check for custom OpenAI-compatible endpoint first (highest priority)
+    if config.providers.custom.api_key and config.providers.custom.api_base:
+        api_key = config.providers.custom.api_key
+        api_base = config.providers.custom.api_base
+        console.print(f"[dim]Using custom OpenAI-compatible provider: {api_base}[/dim]")
+        return OpenAIProvider(
+            api_key=api_key,
+            api_base=api_base,
+            default_model=config.agents.defaults.model
+        )
+    
+    # Check for NVIDIA API key
     if config.providers.nvidia.api_key:
         api_key = config.providers.nvidia.api_key
         api_base = config.providers.nvidia.api_base or "https://integrate.api.nvidia.com/v1"

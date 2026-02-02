@@ -1,0 +1,19 @@
+{
+  "_comment": "Custom OpenAI-compatible provider configuration",
+  "_description": "Use this for any OpenAI-compatible API endpoint (vLLM, LM Studio, Ollama, local LLM, etc.)",
+  
+  "providers": {
+    "custom": {
+      "api_key": "your-api-key-or-sk-xxx",
+      "api_base": "http://localhost:8000/v1"
+    }
+  },
+  
+  "agents": {
+    "defaults": {
+      "model": "your-model-name",
+      "max_tokens": 4096,
+      "temperature": 0.7
+    }
+  }
+}

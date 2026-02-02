@@ -132,6 +132,39 @@ async def _read_interactive_input_async() -> str:
 
 
 
+def _create_provider(config):
+    """Create appropriate LLM provider based on configuration.
+    
+    Priority order: NVIDIA > OpenRouter > Anthropic > OpenAI > Gemini > Zhipu > vLLM
+    """
+    from nanobot.providers.litellm_provider import LiteLLMProvider
+    from nanobot.providers.openai_provider import OpenAIProvider
+    
+    # Check for NVIDIA API key first
+    if config.providers.nvidia.api_key:
+        api_key = config.providers.nvidia.api_key
+        api_base = config.providers.nvidia.api_base or "https://integrate.api.nvidia.com/v1"
+        console.print("[dim]Using NVIDIA API provider[/dim]")
+        return OpenAIProvider(
+            api_key=api_key,
+            api_base=api_base,
+            default_model=config.agents.defaults.model
+        )
+    
+    # Fall back to LiteLLM for other providers
+    api_key = config.get_api_key()
+    api_base = config.get_api_base()
+    
+    if not api_key:
+        return None
+    
+    return LiteLLMProvider(
+        api_key=api_key,
+        api_base=api_base,
+        default_model=config.agents.defaults.model
+    )
+
+
 def version_callback(value: bool):
     if value:
         console.print(f"{__logo__} nanobot v{__version__}")
@@ -338,11 +371,11 @@ def gateway(
     bus = MessageBus()
     provider = _make_provider(config)
     session_manager = SessionManager(config.workspace_path)
-    
+
     # Create cron service first (callback set after agent creation)
     cron_store_path = get_data_dir() / "cron" / "jobs.json"
     cron = CronService(cron_store_path)
-    
+
     # Create agent with cron service
     agent = AgentLoop(
         bus=bus,
@@ -448,7 +481,7 @@ def agent(
     from loguru import logger
     
     config = load_config()
-    
+
     bus = MessageBus()
     provider = _make_provider(config)
 

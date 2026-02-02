@@ -62,6 +62,31 @@ nanobot gateway
 - Thinking mode enabled by default for `glm` models
 - No additional environment variables needed
 
+## Custom OpenAI-Compatible Providers
+
+You can use any OpenAI-compatible API endpoint (vLLM, LM Studio, Ollama, local models, etc.):
+
+```json
+{
+  "providers": {
+    "custom": {
+      "api_key": "your-key-or-sk-xxx",
+      "api_base": "http://localhost:8000/v1"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": "your-model-name",
+      "max_tokens": 4096
+    }
+  }
+}
+```
+
+**Priority**: Custom provider has highest priority and overrides NVIDIA if both are configured.
+
+See `config.example.custom.json` for full example.
+
 ## Troubleshooting
 
 **Unicode errors on Windows**: Set console to UTF-8:

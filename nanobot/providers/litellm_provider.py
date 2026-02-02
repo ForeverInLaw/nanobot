@@ -35,25 +35,21 @@ class LiteLLMProvider(LLMProvider):
         # Track if using custom endpoint (vLLM, etc.)
         self.is_vllm = bool(api_base) and not self.is_openrouter
         
-        # Configure LiteLLM based on provider
+        # Configure LiteLLM environment variables based on provider
+        # Note: api_key is also passed directly to each request for reliability
         if api_key:
             if self.is_openrouter:
-                # OpenRouter mode - set key
                 os.environ["OPENROUTER_API_KEY"] = api_key
             elif self.is_vllm:
-                # vLLM/custom endpoint - uses OpenAI-compatible API
                 os.environ["OPENAI_API_KEY"] = api_key
             elif "anthropic" in default_model:
-                os.environ.setdefault("ANTHROPIC_API_KEY", api_key)
+                os.environ["ANTHROPIC_API_KEY"] = api_key
             elif "openai" in default_model or "gpt" in default_model:
-                os.environ.setdefault("OPENAI_API_KEY", api_key)
+                os.environ["OPENAI_API_KEY"] = api_key
             elif "gemini" in default_model.lower():
-                os.environ.setdefault("GEMINI_API_KEY", api_key)
+                os.environ["GEMINI_API_KEY"] = api_key
             elif "zhipu" in default_model or "glm" in default_model or "zai" in default_model:
-                os.environ.setdefault("ZHIPUAI_API_KEY", api_key)
-        
-        if api_base:
-            litellm.api_base = api_base
+                os.environ["ZHIPUAI_API_KEY"] = api_key
         
         # Disable LiteLLM logging noise
         litellm.suppress_debug_info = True
@@ -110,7 +106,9 @@ class LiteLLMProvider(LLMProvider):
             "temperature": temperature,
         }
         
-        # Pass api_base directly for custom endpoints (vLLM, etc.)
+        # Pass api_key and api_base directly for custom endpoints
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
         if self.api_base:
             kwargs["api_base"] = self.api_base
         

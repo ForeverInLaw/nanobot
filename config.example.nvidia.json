@@ -1,0 +1,15 @@
+{
+  "providers": {
+    "nvidia": {
+      "api_key": "$NVIDIA_API_KEY",
+      "api_base": "https://integrate.api.nvidia.com/v1"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": "z-ai/glm4.7",
+      "max_tokens": 16384,
+      "temperature": 1.0
+    }
+  }
+}

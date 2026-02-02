@@ -18,6 +18,39 @@ app = typer.Typer(
 console = Console()
 
 
+def _create_provider(config):
+    """Create appropriate LLM provider based on configuration.
+    
+    Priority order: NVIDIA > OpenRouter > Anthropic > OpenAI > Gemini > Zhipu > vLLM
+    """
+    from nanobot.providers.litellm_provider import LiteLLMProvider
+    from nanobot.providers.openai_provider import OpenAIProvider
+    
+    # Check for NVIDIA API key first
+    if config.providers.nvidia.api_key:
+        api_key = config.providers.nvidia.api_key
+        api_base = config.providers.nvidia.api_base or "https://integrate.api.nvidia.com/v1"
+        console.print("[dim]Using NVIDIA API provider[/dim]")
+        return OpenAIProvider(
+            api_key=api_key,
+            api_base=api_base,
+            default_model=config.agents.defaults.model
+        )
+    
+    # Fall back to LiteLLM for other providers
+    api_key = config.get_api_key()
+    api_base = config.get_api_base()
+    
+    if not api_key:
+        return None
+    
+    return LiteLLMProvider(
+        api_key=api_key,
+        api_base=api_base,
+        default_model=config.agents.defaults.model
+    )
+
+
 def version_callback(value: bool):
     if value:
         console.print(f"{__logo__} nanobot v{__version__}")
@@ -160,7 +193,6 @@ def gateway(
     """Start the nanobot gateway."""
     from nanobot.config.loader import load_config, get_data_dir
     from nanobot.bus.queue import MessageBus
-    from nanobot.providers.litellm_provider import LiteLLMProvider
     from nanobot.agent.loop import AgentLoop
     from nanobot.channels.manager import ChannelManager
     from nanobot.cron.service import CronService
@@ -178,20 +210,13 @@ def gateway(
     # Create components
     bus = MessageBus()
     
-    # Create provider (supports OpenRouter, Anthropic, OpenAI)
-    api_key = config.get_api_key()
-    api_base = config.get_api_base()
+    # Create provider based on configuration
+    provider = _create_provider(config)
     
-    if not api_key:
+    if not provider:
         console.print("[red]Error: No API key configured.[/red]")
-        console.print("Set one in ~/.nanobot/config.json under providers.openrouter.apiKey")
+        console.print("Set one in ~/.nanobot/config.json under providers.nvidia.apiKey or providers.openrouter.apiKey")
         raise typer.Exit(1)
-    
-    provider = LiteLLMProvider(
-        api_key=api_key,
-        api_base=api_base,
-        default_model=config.agents.defaults.model
-    )
     
     # Create agent
     agent = AgentLoop(
@@ -282,24 +307,18 @@ def agent(
     """Interact with the agent directly."""
     from nanobot.config.loader import load_config
     from nanobot.bus.queue import MessageBus
-    from nanobot.providers.litellm_provider import LiteLLMProvider
     from nanobot.agent.loop import AgentLoop
     
     config = load_config()
     
-    api_key = config.get_api_key()
-    api_base = config.get_api_base()
+    # Create provider based on configuration
+    provider = _create_provider(config)
     
-    if not api_key:
+    if not provider:
         console.print("[red]Error: No API key configured.[/red]")
         raise typer.Exit(1)
     
     bus = MessageBus()
-    provider = LiteLLMProvider(
-        api_key=api_key,
-        api_base=api_base,
-        default_model=config.agents.defaults.model
-    )
     
     agent_loop = AgentLoop(
         bus=bus,

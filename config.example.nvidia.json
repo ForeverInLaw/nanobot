@@ -1,10 +1,14 @@
 {
+  "_comment": "NVIDIA API Configuration for nanobot",
+  "_docs": "https://github.com/ForeverInLaw/nanobot/blob/main/NVIDIA_SETUP.md",
+  
   "providers": {
     "nvidia": {
-      "api_key": "$NVIDIA_API_KEY",
+      "api_key": "nvapi-YOUR_API_KEY_HERE",
       "api_base": "https://integrate.api.nvidia.com/v1"
     }
   },
+  
   "agents": {
     "defaults": {
       "model": "z-ai/glm4.7",

@@ -99,13 +99,25 @@ class OpenAIProvider(LLMProvider):
                 finish_reason="error",
             )
     
+    def _strip_thinking_tags(self, content: str) -> str:
+        """Remove thinking/reasoning tags from content."""
+        import re
+        # Remove content between thinking/reasoning tags (multiline, case-insensitive)
+        for tag in ['think', 'thinking', 'reasoning', 'thought']:
+            # Full tags: <tag>...</tag>
+            content = re.sub(rf'<{tag}>.*?</{tag}>', '', content, flags=re.DOTALL | re.IGNORECASE)
+            # Truncated tags at the end: <tag>...$
+            content = re.sub(rf'<{tag}>.*$', '', content, flags=re.DOTALL | re.IGNORECASE)
+        return content.strip()
+    
     def _parse_response(self, response: Any) -> LLMResponse:
         """Parse OpenAI SDK response into our standard format."""
         choice = response.choices[0]
         message = choice.message
         
-        # Extract content
+        # Extract content and strip thinking tags
         content = message.content or ""
+        content = self._strip_thinking_tags(content)
         
         # Note: reasoning_content is available in the response but we don't expose it
         # as it's just the model's internal thinking process

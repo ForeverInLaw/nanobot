@@ -49,7 +49,12 @@ class LiteLLMProvider(LLMProvider):
             elif "gemini" in default_model.lower():
                 os.environ["GEMINI_API_KEY"] = api_key
             elif "zhipu" in default_model or "glm" in default_model or "zai" in default_model:
-                os.environ["ZHIPUAI_API_KEY"] = api_key
+                os.environ.setdefault("ZHIPUAI_API_KEY", api_key)
+            elif "groq" in default_model:
+                os.environ.setdefault("GROQ_API_KEY", api_key)
+            
+            if api_base:
+                litellm.api_base = api_base
         
         # Disable LiteLLM logging noise
         litellm.suppress_debug_info = True

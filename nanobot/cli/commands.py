@@ -224,7 +224,11 @@ def gateway(
     # Create provider based on configuration
     provider = _create_provider(config)
     
-    if not provider:
+    # Check for Bedrock which doesn't need API key
+    model = config.agents.defaults.model
+    is_bedrock = model.startswith("bedrock/")
+    
+    if not provider and not is_bedrock:
         console.print("[red]Error: No API key configured.[/red]")
         console.print("Set one in ~/.nanobot/config.json under providers.nvidia.apiKey or providers.openrouter.apiKey")
         raise typer.Exit(1)
@@ -325,10 +329,14 @@ def agent(
     # Create provider based on configuration
     provider = _create_provider(config)
     
-    if not provider:
+    # Check for Bedrock which doesn't need API key
+    model = config.agents.defaults.model
+    is_bedrock = model.startswith("bedrock/")
+    
+    if not provider and not is_bedrock:
         console.print("[red]Error: No API key configured.[/red]")
         raise typer.Exit(1)
-    
+
     bus = MessageBus()
     
     agent_loop = AgentLoop(
@@ -378,21 +386,31 @@ app.add_typer(channels_app, name="channels")
 def channels_status():
     """Show channel status."""
     from nanobot.config.loader import load_config
-    
+
     config = load_config()
-    
+
     table = Table(title="Channel Status")
     table.add_column("Channel", style="cyan")
     table.add_column("Enabled", style="green")
-    table.add_column("Bridge URL", style="yellow")
-    
+    table.add_column("Configuration", style="yellow")
+
+    # WhatsApp
     wa = config.channels.whatsapp
     table.add_row(
         "WhatsApp",
         "✓" if wa.enabled else "✗",
         wa.bridge_url
     )
-    
+
+    # Telegram
+    tg = config.channels.telegram
+    tg_config = f"token: {tg.token[:10]}..." if tg.token else "[dim]not configured[/dim]"
+    table.add_row(
+        "Telegram",
+        "✓" if tg.enabled else "✗",
+        tg_config
+    )
+
     console.print(table)
 
 
@@ -638,18 +656,17 @@ def cron_run(
 def status():
     """Show nanobot status."""
     from nanobot.config.loader import load_config, get_config_path
-    from nanobot.utils.helpers import get_workspace_path
-    
+
     config_path = get_config_path()
-    workspace = get_workspace_path()
-    
+    config = load_config()
+    workspace = config.workspace_path
+
     console.print(f"{__logo__} nanobot Status\n")
-    
+
     console.print(f"Config: {config_path} {'[green]✓[/green]' if config_path.exists() else '[red]✗[/red]'}")
     console.print(f"Workspace: {workspace} {'[green]✓[/green]' if workspace.exists() else '[red]✗[/red]'}")
-    
+
     if config_path.exists():
-        config = load_config()
         console.print(f"Model: {config.agents.defaults.model}")
         
         # Check API keys
